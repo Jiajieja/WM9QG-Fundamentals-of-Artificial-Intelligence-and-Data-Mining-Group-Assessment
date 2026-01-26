@@ -9,11 +9,11 @@ from sklearn.preprocessing import MinMaxScaler
 import warnings
 warnings.filterwarnings("ignore")
 
-studInfo=pd.read_csv("Original Dataset\\studentInfo.csv")
-assessments=pd.read_csv("Original Dataset\\assessments.csv")
-studAss=pd.read_csv("Original Dataset\\studentAssessment.csv")
-studVle=pd.read_csv("Original Dataset\\studentVle.csv")
-vle=pd.read_csv("Original Dataset\\vle.csv")
+studInfo=pd.read_csv("studentInfo.csv")
+assessments=pd.read_csv("assessments.csv")
+studAss=pd.read_csv("studentAssessment.csv")
+studVle=pd.read_csv("studentVle.csv")
+vle=pd.read_csv("vle.csv")
 exams=assessments[assessments["assessment_type"]=="Exam"]
 others=assessments[assessments["assessment_type"]!="Exam"]
 amounts=others.groupby(["code_module","code_presentation"]).count()["id_assessment"] 
@@ -71,9 +71,9 @@ final_df.drop(["id_student","code_module","code_presentation"],axis=1,inplace=Tr
 # print(final_df.describe())
 # print(final_df.info())
 
-# plt.figure(figsize=(8,6))
-# sns.heatmap(final_df.corr(),annot=True)
-# plt.savefig("correlation_matrix.png")
+plt.figure(figsize=(8,6))
+sns.heatmap(final_df.select_dtypes(include=['number']).corr(), annot=True)
+plt.savefig("Random Forest/correlation_matrix.png")
 
 plt.figure(figsize=(8,6))
 sns.countplot(data=final_df, x="final_result")
