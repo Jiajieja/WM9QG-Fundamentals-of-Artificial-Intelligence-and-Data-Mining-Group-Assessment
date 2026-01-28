@@ -3,174 +3,213 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import (
+    classification_report,
+    confusion_matrix,
+    accuracy_score,
+    ConfusionMatrixDisplay,
+    roc_curve,
+    auc,
+    precision_recall_curve,
+    average_precision_score
+)
+
 import warnings
 warnings.filterwarnings("ignore")
 
-studInfo=pd.read_csv("studentInfo.csv")
-assessments=pd.read_csv("assessments.csv")
-studAss=pd.read_csv("studentAssessment.csv")
-studVle=pd.read_csv("studentVle.csv")
-vle=pd.read_csv("vle.csv")
-exams=assessments[assessments["assessment_type"]=="Exam"]
-others=assessments[assessments["assessment_type"]!="Exam"]
-amounts=others.groupby(["code_module","code_presentation"]).count()["id_assessment"] 
-amounts=amounts.reset_index()
-# print(amounts.head())
+# ---------------------------------------------------
+# Load data
+# ---------------------------------------------------
+studInfo = pd.read_csv("studentInfo.csv")
+assessments = pd.read_csv("assessments.csv")
+studAss = pd.read_csv("studentAssessment.csv")
+studVle = pd.read_csv("studentVle.csv")
+vle = pd.read_csv("vle.csv")
+
+exams = assessments[assessments["assessment_type"] == "Exam"]
+others = assessments[assessments["assessment_type"] != "Exam"]
+
+amounts = others.groupby(["code_module","code_presentation"]).count()["id_assessment"].reset_index()
 
 def pass_fail(grade):
-    if grade>=40:
-        return True
-    else:
-        return False
-stud_ass=pd.merge(studAss,others,how="inner",on=["id_assessment"])
-stud_ass["pass"]=stud_ass["score"].apply(pass_fail)
-stud_ass["weighted_grade"]=stud_ass["score"]*stud_ass["weight"]/100
-# print(stud_ass.head())
+    return grade >= 40
 
-avg_grade=stud_ass.groupby(["id_student","code_module","code_presentation"]).sum()["weighted_grade"].reset_index()
-# print(avg_grade.head())
+stud_ass = pd.merge(studAss, others, how="inner", on="id_assessment")
+stud_ass["pass"] = stud_ass["score"].apply(pass_fail)
+stud_ass["weighted_grade"] = stud_ass["score"] * stud_ass["weight"] / 100
 
-pass_rate=pd.merge((stud_ass[stud_ass["pass"]==True].groupby(["id_student","code_module","code_presentation"]).count()["pass"]).reset_index(),amounts,how="left",on=["code_module","code_presentation"])
-pass_rate["pass_rate"]=pass_rate["pass"]/pass_rate["id_assessment"]
-pass_rate.drop(["pass","id_assessment"], axis=1,inplace=True)
-# print(pass_rate.head())
+avg_grade = stud_ass.groupby(
+    ["id_student","code_module","code_presentation"]
+).sum()["weighted_grade"].reset_index()
 
-stud_exams=pd.merge(studAss,exams,how="inner",on=["id_assessment"])
-stud_exams["exam_score"]=stud_exams["score"]
-stud_exams.drop(["id_assessment","date_submitted","is_banked", "score","assessment_type","date","weight"],axis=1,inplace=True)
-# print(stud_exams.head())
+pass_rate = pd.merge(
+    stud_ass[stud_ass["pass"] == True]
+    .groupby(["id_student","code_module","code_presentation"])
+    .count()["pass"]
+    .reset_index(),
+    amounts,
+    how="left",
+    on=["code_module","code_presentation"]
+)
 
-# print(vle.head())
+pass_rate["pass_rate"] = pass_rate["pass"] / pass_rate["id_assessment"]
+pass_rate.drop(["pass","id_assessment"], axis=1, inplace=True)
 
-vle[~vle["week_from"].isna()]
+stud_exams = pd.merge(studAss, exams, how="inner", on="id_assessment")
+stud_exams["exam_score"] = stud_exams["score"]
+stud_exams.drop(
+    ["id_assessment","date_submitted","is_banked","score",
+     "assessment_type","date","weight"],
+    axis=1,
+    inplace=True
+)
 
-# print(studVle.head())
+avg_per_site = studVle.groupby(
+    ["id_student","id_site","code_module","code_presentation"]
+).mean().reset_index()
 
-avg_per_site=studVle.groupby(["id_student","id_site","code_module","code_presentation"]).mean().reset_index()
-# print(avg_per_site.head())
+avg_per_student = avg_per_site.groupby(
+    ["id_student","code_module","code_presentation"]
+).mean()[["date","sum_click"]].reset_index()
 
-avg_per_student=avg_per_site.groupby(["id_student","code_module","code_presentation"]).mean()[["date","sum_click"]].reset_index()
-# print(avg_per_student.head())
+studInfo = studInfo[studInfo["final_result"] != "Withdrawn"]
+studInfo = studInfo[[
+    "code_module","code_presentation","id_student",
+    "num_of_prev_attempts","final_result"
+]]
 
-studInfo=studInfo[studInfo["final_result"]!="Withdrawn"]
-studInfo=studInfo[["code_module","code_presentation","id_student","num_of_prev_attempts","final_result"]]
-# print(studInfo.head())
+df_1 = pd.merge(avg_grade, pass_rate,
+                on=["id_student","code_module","code_presentation"])
 
-df_1=pd.merge(avg_grade,pass_rate,how="inner",on=["id_student","code_module","code_presentation"])
-assessment_info=pd.merge(df_1, stud_exams, how="inner", on=["id_student","code_module","code_presentation"])
-# print(assessment_info.head())
+assessment_info = pd.merge(
+    df_1, stud_exams,
+    on=["id_student","code_module","code_presentation"]
+)
 
-df_2=pd.merge(studInfo,assessment_info,how="inner",on=["id_student","code_module","code_presentation"])
-final_df=pd.merge(df_2,avg_per_student,how="inner", on=["id_student","code_module","code_presentation"])
-final_df.drop(["id_student","code_module","code_presentation"],axis=1,inplace=True)
-# print(final_df.head())
+df_2 = pd.merge(
+    studInfo, assessment_info,
+    on=["id_student","code_module","code_presentation"]
+)
 
-# print(final_df.describe())
-# print(final_df.info())
+final_df = pd.merge(
+    df_2, avg_per_student,
+    on=["id_student","code_module","code_presentation"]
+)
 
-plt.figure(figsize=(8,6))
-sns.heatmap(final_df.select_dtypes(include=['number']).corr(), annot=True)
-plt.savefig("Random Forest/correlation_matrix.png")
+final_df.drop(
+    ["id_student","code_module","code_presentation"],
+    axis=1,
+    inplace=True
+)
 
-plt.figure(figsize=(8,6))
-sns.countplot(data=final_df, x="final_result")
-plt.savefig("Random Forest/final_result_distribution.png")
-
-g = sns.pairplot(final_df)
-g.savefig("Random Forest/pairplot.png")
-
-# print(final_df[final_df["sum_click"]>10])
-# print(final_df[final_df["num_of_prev_attempts"]>4])
-final_df=final_df[final_df["sum_click"]<=10]
-final_df=final_df[final_df["num_of_prev_attempts"]<=4]
-print(final_df.head())
-
-# Splitting the data
 # ---------------------------------------------------
-X=final_df.drop("final_result", axis=1)
-y=final_df["final_result"]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
-
-# Creating different feature sets
+# Simple filtering
 # ---------------------------------------------------
-X1_test=X_test
-X1_train=X_train
-# Remove weighted_grade for testing
+final_df = final_df[final_df["sum_click"] <= 10]
+final_df = final_df[final_df["num_of_prev_attempts"] <= 4]
+
 # ---------------------------------------------------
-X2_test=X_test.drop("weighted_grade",axis=1)
-X2_train=X_train.drop("weighted_grade",axis=1)
-# Remove pass_rate for testing
+# Train / Test split
 # ---------------------------------------------------
-X3_test=X_test.drop("pass_rate",axis=1)
-X3_train=X_train.drop("pass_rate",axis=1)
+X = final_df.drop("final_result", axis=1)
+y = final_df["final_result"]
 
-# Scaling the features
-scaler1=MinMaxScaler()
-scaler2=MinMaxScaler()
-scaler3=MinMaxScaler()
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42
+)
 
-# Fit and transform the training data, transform the testing data
-X1_train=scaler1.fit_transform(X1_train)
-X1_test=scaler1.transform(X1_test)
-X2_train=scaler2.fit_transform(X2_train)
-X2_test=scaler2.transform(X2_test)
-X3_train=scaler3.fit_transform(X3_train)
-X3_test=scaler3.transform(X3_test)
+# Feature sets
+X1_train, X1_test = X_train, X_test
+X2_train, X2_test = X_train.drop("weighted_grade", axis=1), X_test.drop("weighted_grade", axis=1)
+X3_train, X3_test = X_train.drop("pass_rate", axis=1), X_test.drop("pass_rate", axis=1)
 
-# training Random Forest Classifier
+# Scaling
+scaler1, scaler2, scaler3 = MinMaxScaler(), MinMaxScaler(), MinMaxScaler()
+X1_train = scaler1.fit_transform(X1_train)
+X1_test  = scaler1.transform(X1_test)
+X2_train = scaler2.fit_transform(X2_train)
+X2_test  = scaler2.transform(X2_test)
+X3_train = scaler3.fit_transform(X3_train)
+X3_test  = scaler3.transform(X3_test)
+
 # ---------------------------------------------------
-rf1=RandomForestClassifier(n_estimators=300)
-rf1.fit(X1_train,y_train)
-result_rf1=rf1.predict(X1_test)
-print("\n")
-print(classification_report(y_test,result_rf1))
+# Train models
 # ---------------------------------------------------
-rf2=RandomForestClassifier(n_estimators=300)
-rf2.fit(X2_train,y_train)
-result_rf2=rf2.predict(X2_test)
-print("\n")
-print(classification_report(y_test,result_rf2))
-# ---------------------------------------------------
-rf3=RandomForestClassifier(n_estimators=300)
-rf3.fit(X3_train,y_train)
-result_rf3=rf3.predict(X3_test)
-print("\n")
-print(classification_report(y_test,result_rf3))
+rf1 = RandomForestClassifier(n_estimators=300, random_state=42)
+rf2 = RandomForestClassifier(n_estimators=300, random_state=42)
+rf3 = RandomForestClassifier(n_estimators=300, random_state=42)
 
-# Calculating Accuracies
-acc1 = accuracy_score(y_test, result_rf1)
-acc2 = accuracy_score(y_test, result_rf2)
-acc3 = accuracy_score(y_test, result_rf3)
+rf1.fit(X1_train, y_train)
+rf2.fit(X2_train, y_train)
+rf3.fit(X3_train, y_train)
 
-print("Model Accuracies:")
-print(f"RF1 (all features): {acc1:.4f}")
-print(f"RF2 (no weighted_grade): {acc2:.4f}")
-print(f"RF3 (no pass_rate): {acc3:.4f}")
+pred1 = rf1.predict(X1_test)
+pred2 = rf2.predict(X2_test)
+pred3 = rf3.predict(X3_test)
 
-# Selecting the Best Model
-accuracies = [acc1, acc2, acc3]
+accs = [
+    accuracy_score(y_test, pred1),
+    accuracy_score(y_test, pred2),
+    accuracy_score(y_test, pred3)
+]
+
+best_index = np.argmax(accs)
 models = [rf1, rf2, rf3]
-feature_sets = [X_train.columns, 
-                X_train.drop("weighted_grade", axis=1).columns,
-                X_train.drop("pass_rate", axis=1).columns]
+preds  = [pred1, pred2, pred3]
+X_tests = [X1_test, X2_test, X3_test]
 
-best_index = np.argmax(accuracies)
 best_model = models[best_index]
-best_features = feature_sets[best_index]
+y_pred_best = preds[best_index]
+X_test_best = X_tests[best_index]
 
-print("\nBest Model is: RF" + str(best_index+1))
-print("Accuracy:", accuracies[best_index])
+print("Best Model: RF", best_index + 1)
+print(classification_report(y_test, y_pred_best))
 
-# Plotting Feature Importance of the Best Model
-importances = best_model.feature_importances_
-indices = np.argsort(importances)[::-1]
+# ---------------------------------------------------
+# Confusion Matrix (multiclass)
+# ---------------------------------------------------
+cm = confusion_matrix(y_test, y_pred_best)
 
-plt.figure(figsize=(10,6))
-plt.bar(range(len(importances)), importances[indices])
-plt.xticks(range(len(importances)), best_features[indices], rotation=90)
-plt.title("Feature Importance of Best Random Forest Model")
-plt.tight_layout()
-plt.savefig("Random Forest/best_model_feature_importance.png")
+plt.figure(figsize=(6,5))
+ConfusionMatrixDisplay(cm).plot(cmap="Blues", values_format="d")
+plt.title("Confusion Matrix (Multiclass)")
+plt.savefig("Random Forest/confusion_matrix.png")
+
+# ---------------------------------------------------
+# Binary reformulation: Fail vs Non-Fail
+# ---------------------------------------------------
+y_test_binary = y_test.apply(lambda x: 1 if x == "Fail" else 0)
+
+fail_index = list(best_model.classes_).index("Fail")
+y_prob_fail = best_model.predict_proba(X_test_best)[:, fail_index]
+
+# ---------------------------------------------------
+# ROC–AUC
+# ---------------------------------------------------
+fpr, tpr, _ = roc_curve(y_test_binary, y_prob_fail)
+roc_auc = auc(fpr, tpr)
+
+plt.figure(figsize=(6,5))
+plt.plot(fpr, tpr, label=f"AUC = {roc_auc:.3f}")
+plt.plot([0,1], [0,1], "--")
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("ROC–AUC (Fail vs Non-Fail)")
+plt.legend()
+plt.savefig("Random Forest/roc_auc_curve.png")
+
+# ---------------------------------------------------
+# Precision–Recall Curve
+# ---------------------------------------------------
+precision, recall, _ = precision_recall_curve(y_test_binary, y_prob_fail)
+ap_score = average_precision_score(y_test_binary, y_prob_fail)
+
+plt.figure(figsize=(6,5))
+plt.plot(recall, precision, label=f"AP = {ap_score:.3f}")
+plt.xlabel("Recall")
+plt.ylabel("Precision")
+plt.title("Precision–Recall Curve (Fail vs Non-Fail)")
+plt.legend()
+plt.savefig("Random Forest/precision_recall_curve.png")
