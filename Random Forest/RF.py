@@ -28,6 +28,31 @@ studAss = pd.read_csv("studentAssessment.csv")
 studVle = pd.read_csv("studentVle.csv")
 vle = pd.read_csv("vle.csv")
 
+check_null_df = {
+    "student_info": studInfo,
+    "student_assess": studAss,
+    "student_vle": studVle,
+    "assessments": assessments,
+    "vle": vle,
+}
+
+for name, df in check_null_df.items():
+    print(f"\nMissing values in {name}:")
+    print(df.isna().sum())
+
+
+# Handle Missing Values
+studInfo['imd_band'] = studInfo['imd_band'].fillna(studInfo['imd_band'].mode()[0])
+studAss['score'] = studAss['score'].fillna(0)
+assessments['date'] = assessments['date'].fillna(assessments['date'].median())
+vle['week_from'] = vle['week_from'].fillna(-1)
+vle['week_to'] = vle['week_to'].fillna(-1)
+
+for name, df in check_null_df.items():
+    print(f"\nMissing values in {name}:")
+    print(df.isna().sum())
+
+
 exams = assessments[assessments["assessment_type"] == "Exam"]
 others = assessments[assessments["assessment_type"] != "Exam"]
 
@@ -213,3 +238,27 @@ plt.ylabel("Precision")
 plt.title("Precision–Recall Curve (Fail vs Non-Fail)")
 plt.legend()
 plt.savefig("Random Forest/precision_recall_curve.png")
+
+
+# ---------------------------------------------------
+# Precision–Recall Curves for all models
+# ---------------------------------------------------
+plt.figure(figsize=(7,6))
+
+for i, (model, X_test_data) in enumerate(zip(models, X_tests), 1):
+    y_test_binary = y_test.apply(lambda x: 1 if x == "Fail" else 0)
+    fail_index = list(model.classes_).index("Fail")
+    y_prob_fail = model.predict_proba(X_test_data)[:, fail_index]
+
+    precision, recall, _ = precision_recall_curve(y_test_binary, y_prob_fail)
+    ap_score = average_precision_score(y_test_binary, y_prob_fail)
+    
+    plt.plot(recall, precision, label=f"RF{i} (AP={ap_score:.3f})")
+
+plt.xlabel("Recall")
+plt.ylabel("Precision")
+plt.title("Precision–Recall Curves (Fail vs Non-Fail)")
+plt.legend()
+plt.grid(True)
+plt.savefig("Random Forest/precision_recall_curves_all_models.png")
+
