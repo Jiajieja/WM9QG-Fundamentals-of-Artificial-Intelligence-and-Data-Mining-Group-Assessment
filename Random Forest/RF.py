@@ -239,10 +239,14 @@ print(classification_report(y_test, y_pred))
 # Confusion Matrix
 # ---------------------------------------------------
 cm = confusion_matrix(y_test, y_pred)
-plt.figure(figsize=(6, 5))
-ConfusionMatrixDisplay(cm).plot(cmap="Blues", values_format="d")
-plt.title("Confusion Matrix (Tuned RF)")
-plt.savefig("Random Forest/confusion_matrix_tuned.png")
+plt.figure(figsize=(7, 6))
+disp = ConfusionMatrixDisplay(
+    confusion_matrix=cm, 
+    display_labels=best_model.classes_
+)
+disp.plot(cmap="Blues", values_format="d")
+plt.title("Confusion Matrix (Tuned Random Forest)")
+plt.savefig("Random Forest/confusion_matrix_tuned_labeled.png")
 
 # ---------------------------------------------------
 # Binary reformulation: Fail vs Non-Fail
