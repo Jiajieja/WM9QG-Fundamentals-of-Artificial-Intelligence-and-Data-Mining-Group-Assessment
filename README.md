@@ -292,4 +292,17 @@ For clustering, when k=2, if students' behaviors of activities in one term on on
 
 Please check the code for more details about this project.
 
+### Code running method
+
+In the folder of Main_Presentation, the EDA and summaries of classification parts in the 
+> OULA_DATASET_ANALYSIS (CLASSIFICATION).ipynb
+
+If you wang to check the analysis of classification or visualization generation in details, please check the folder of Classification. All files are in the format of .ipynb and ready to run, except the random forest running by .py file, you may need a command in the terminal at the Random Forest folder:
+> python RF.py
+
+For all information/visualization/analysis about clustering, please check the .ipynb files in the corresponding folders.
+
+You may need to install the requirements first.
+> pip install -r requirements.txt
+
 ---
