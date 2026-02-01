@@ -254,8 +254,42 @@ Four classification models were trained and evaluated:
 
 ---
 
+## 🤖 Clustering
+### Data processing
+
+* Focusing on the behavior of students at the activity in module in terms as the features to cluster.
+* Transfer the pre-processed csv from long table to wide table.
+* Long tailed data, therefore processed via simple log1p, as it provides a good performance.
+* For K-means, since relies on distance, scaled all features
+
+### K-means clustering
+* Counting the extra 'total features' to click, records and unique activity to each sample are avaliable to use.
+* K-value is decided by the visulizations of 'Silhouette Score' and 'Elbow'.
+* As k=2,both with/without 'total features' provides the best performance on clustering.
+* With Adjusted Rand Index as k=2, to tell the clusters similarity.
+* With/without the manually 'total features' will influence on the k-selection if k>2.
+* With a switch on using the data with/without the manually 'total features'
+  >X_using=scaler_X_WithTotal 
+* With PCA and t-SNE for visualization on the clusters distribution.
+* With top features analysis and result analysis on clustering to relate the final result and behaviors in activities.
+* Top features when k=2:
+    * `sum_click_page`
+    * `records_page`
+    * `records_questionnaire`
+    * `sum_click_questionnaire`
+
+
+### Hieratical clustering
+* As the verification to the results of K-means clustering.
+* Focusing on the result of k=2, decided by Silhouette Score and dendrogram.
+* With top features analysis and result analysis on clustering to relate the final result and behaviors in activities.
+
 ## 🏆 Final Conclusion
 
 Based on a comprehensive evaluation—particularly emphasizing **F1-Score** to balance precision and recall—the **optimized XGBoost classifier** emerged as the best-performing model for predicting student outcomes in the OULAD dataset.
+
+For clustering, when k=2, if students' behaviors of activities in one term on one module is clustered into 0, they have a higher possibility to get fail in the final result or withdrawn. 
+
+Please check the code for more details about this project.
 
 ---
