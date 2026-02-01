@@ -5,6 +5,58 @@
 - **OULA_DATASET_ANALYSIS (CLASSIFICATION).ipynb**  
 Contains the complete end-to-end workflow, including data cleaning, exploratory data analysis, feature engineering, model training, hyperparameter tuning, and performance evaluation for classification.
 
+## Step 1: Upload the notebook to Google Colab
+
+1. Go to **[https://colab.research.google.com](https://colab.research.google.com)**
+2. Click **File → Upload notebook**
+3. Upload **`OULA_DATASET_ANALYSIS (CLASSIFICATION).ipynb`**
+4. The notebook will open in Colab
+
+---
+
+## Step 2: Upload the dataset to Google Drive
+
+1. Open **Google Drive**
+2. Create a folder, for example:
+
+   ```
+   MyDrive/OULA_Dataset/
+   ```
+3. Upload **all dataset files** (CSV files, folders, etc.) used by the notebook into this folder
+
+👉 Keep the folder structure simple—this will make path replacement easier.
+
+---
+
+## Step 3: Mount Google Drive in Colab
+
+Add this **at the top of the notebook** (or run it if it already exists):
+
+```python
+from google.colab import drive
+drive.mount('/content/drive')
+```
+
+* You’ll be asked to authorize access
+* After mounting, your Drive is available at:
+
+  ```
+  /content/drive/MyDrive/
+  ```
+
+---
+
+## Step 4: Replace dataset links with Google Drive paths
+
+---
+
+## Step 5: Run the notebook
+
+1. Click **Runtime → Run all**
+2. Or run cells one-by-one from top to bottom
+
+---
+
 ## 📌 Project Overview
 
 The **Open University Learning Analytics Dataset (OULAD)** contains anonymized data on students enrolled in online courses offered by the Open University. The dataset is composed of multiple interconnected tables capturing student demographics, academic performance, course structure, and online learning behavior.
