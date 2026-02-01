@@ -357,7 +357,7 @@ For all information/visualization/analysis about clustering, please check the .i
 You may need to install the requirements first.
 > pip install -r requirements.txt
 
-The original CSV can not be pushed to the github repo, as they are over the size limitation, please follow the instruction of google colab operating before. For K-means clustering, as it was based on a pre-processed CSV.
+The original CSV can not be pushed to the github repo, as they are over the size limitation, please follow the instruction of google colab operating before. For clustering, as it was based on a pre-processed CSV.
 > student_engagement_analysis.csv
 
 Therefore please download the necessary csv and put them into the corresponding file address from:
